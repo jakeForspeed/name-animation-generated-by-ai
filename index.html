@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Name Galaxy Fixed</title>
+<title>Name Galaxy Field</title>
 <style>
   body {
     margin: 0;
@@ -21,12 +21,13 @@
     color: rgba(255,255,255,0.4);
     font-family: sans-serif;
     font-size: 12px;
+    user-select: none;
   }
 </style>
 </head>
 <body>
 
-<div class="hint">Move mouse • Watch name transform into galaxy ✨</div>
+<div class="hint">Move mouse • Watch your name become a galaxy ✨</div>
 <canvas id="c"></canvas>
 
 <script>
@@ -38,10 +39,11 @@ canvas.height = innerHeight;
 
 const text = "Jaynee Jane Velasco";
 
+/* ---------------- MOUSE FIELD ---------------- */
 const mouse = {
   x: canvas.width / 2,
   y: canvas.height / 2,
-  radius: 180
+  radius: 200
 };
 
 window.addEventListener("mousemove", e => {
@@ -49,84 +51,66 @@ window.addEventListener("mousemove", e => {
   mouse.y = e.clientY;
 });
 
-class Particle {
-  constructor(x, y) {
+/* ---------------- FLOATING NAME PARTICLES ---------------- */
+class NameParticle {
+  constructor() {
+    this.reset();
+    this.size = Math.random() * 2 + 1;
+    this.hue = Math.random() * 360;
+  }
+
+  reset() {
     this.x = Math.random() * canvas.width;
     this.y = Math.random() * canvas.height;
 
-    this.targetX = x;
-    this.targetY = y;
+    this.vx = (Math.random() - 0.5) * 1.2;
+    this.vy = (Math.random() - 0.5) * 1.2;
 
-    this.baseX = x;
-    this.baseY = y;
-
-    this.size = 2;
-    this.hue = Math.random() * 360;
+    this.text = text[Math.floor(Math.random() * text.length)];
   }
 
   update(time) {
 
-    // galaxy drift
-    this.x += Math.sin(time + this.baseY * 0.01) * 0.3;
-    this.y += Math.cos(time + this.baseX * 0.01) * 0.3;
+    // smooth floating motion
+    this.x += this.vx + Math.sin(time + this.y * 0.01) * 0.3;
+    this.y += this.vy + Math.cos(time + this.x * 0.01) * 0.3;
 
-    // mouse gravity
+    // wrap around screen (infinite space feel)
+    if (this.x < 0) this.x = canvas.width;
+    if (this.x > canvas.width) this.x = 0;
+    if (this.y < 0) this.y = canvas.height;
+    if (this.y > canvas.height) this.y = 0;
+
+    // mouse gravity distortion
     let dx = this.x - mouse.x;
     let dy = this.y - mouse.y;
     let dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < mouse.radius) {
       let force = (mouse.radius - dist) / mouse.radius;
-      this.x += dx * force * 0.5;
-      this.y += dy * force * 0.5;
+
+      this.x += dx * force * 0.8;
+      this.y += dy * force * 0.8;
     }
 
-    // return to text shape
-    this.x += (this.targetX - this.x) * 0.04;
-    this.y += (this.targetY - this.y) * 0.04;
-
-    this.hue += 0.5;
+    this.hue += 0.8;
   }
 
   draw() {
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-    ctx.fillStyle = `hsl(${this.hue},100%,65%)`;
-    ctx.fill();
+    ctx.fillStyle = `hsla(${this.hue},100%,70%,0.9)`;
+    ctx.font = `${this.size * 10}px Arial`;
+    ctx.fillText(this.text, this.x, this.y);
   }
 }
 
+/* ---------------- CREATE FIELD ---------------- */
 let particles = [];
 
-/* ---------------- CREATE TEXT SHAPE ---------------- */
-function createTextShape() {
-
+function init() {
   particles = [];
 
-  let temp = document.createElement("canvas");
-  let tctx = temp.getContext("2d");
-
-  temp.width = canvas.width;
-  temp.height = canvas.height;
-
-  tctx.fillStyle = "white";
-  tctx.font = "bold 70px Arial";
-  tctx.textAlign = "center";
-  tctx.textBaseline = "middle";
-
-  tctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-  let data = tctx.getImageData(0, 0, canvas.width, canvas.height);
-
-  for (let y = 0; y < canvas.height; y += 5) {
-    for (let x = 0; x < canvas.width; x += 5) {
-
-      let index = (y * canvas.width + x) * 4;
-
-      if (data.data[index + 3] > 128) {
-        particles.push(new Particle(x, y));
-      }
-    }
+  for (let i = 0; i < 250; i++) {
+    particles.push(new NameParticle());
   }
 }
 
@@ -135,22 +119,27 @@ let time = 0;
 /* ---------------- ANIMATE ---------------- */
 function animate() {
 
-  ctx.fillStyle = "rgba(0,0,0,0.12)";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  // soft fade (trail effect)
+  ctx.fillStyle = "rgba(0,0,0,0.15)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   time += 0.01;
 
-  // soft cosmic glow
+  // cosmic glow layer
   let glow = ctx.createRadialGradient(
-    canvas.width/2, canvas.height/2, 50,
-    canvas.width/2, canvas.height/2, 600
+    canvas.width/2,
+    canvas.height/2,
+    50,
+    canvas.width/2,
+    canvas.height/2,
+    700
   );
 
-  glow.addColorStop(0, "rgba(0,255,255,0.05)");
+  glow.addColorStop(0, "rgba(0,255,255,0.06)");
   glow.addColorStop(1, "transparent");
 
   ctx.fillStyle = glow;
-  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   particles.forEach(p => {
     p.update(time);
@@ -160,15 +149,15 @@ function animate() {
   requestAnimationFrame(animate);
 }
 
-/* ---------------- INIT ---------------- */
-createTextShape();
+/* ---------------- START ---------------- */
+init();
 animate();
 
 /* ---------------- RESIZE ---------------- */
 window.addEventListener("resize", () => {
   canvas.width = innerWidth;
   canvas.height = innerHeight;
-  createTextShape();
+  init();
 });
 </script>
 
