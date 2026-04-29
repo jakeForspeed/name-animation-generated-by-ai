@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Identity Galaxy Field</title>
+<title>Galaxy + Libra + Moon + Shooting Stars</title>
+
 <style>
   body {
     margin: 0;
@@ -24,39 +25,36 @@
   }
 </style>
 </head>
+
 <body>
 
-<div class="hint">Move mouse • Explore identity galaxy ✨</div>
+<div class="hint">Move mouse • Explore galaxy ✨</div>
 <canvas id="c"></canvas>
 
 <script>
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
-canvas.width = innerWidth;
-canvas.height = innerHeight;
+/* ---------------- SET SIZE ---------------- */
+function setCanvasSize() {
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+setCanvasSize();
 
-/* ---------------- IDENTITY DATA ---------------- */
+/* ---------------- DATA ---------------- */
 const data = [
-  "J","A","Y","N","E","E","J","A","N","E","V","E","L","A","S","C","O",
-  "🌻","🌼","🌹","🪷","✨",
-  "October",
-  "11",
-  "1999",
-  "♎",
-  "⚖️",
-  "1","7","8","10","11","20","21","73",
-  "🐶","🐕","🐇","🐰"
+  "J","A","Y","N","E","V","L","S","C","O",
+  "🌻","🌼","🌹","🪷","✨","❤️","♎","⚖️","🐶","🐰",
+  "October","1999",
+  "1","7","8","10","11","20","21","73"
 ];
 
 const colorPalette = [
-  "#4DA3FF", // Blue
-  "#A0A0A0", // Gray
-  "#FFD84D", // Yellow
-  "#FFFFFF"  // White
+  "#7AA2C4","#587880","#A0A0A0","#FBEC5D","#FFFFFF"
 ];
 
-/* ---------------- MOUSE FIELD ---------------- */
+/* ---------------- MOUSE ---------------- */
 const mouse = {
   x: canvas.width / 2,
   y: canvas.height / 2,
@@ -68,35 +66,28 @@ window.addEventListener("mousemove", e => {
   mouse.y = e.clientY;
 });
 
-/* ---------------- PARTICLE ---------------- */
+/* ---------------- PARTICLES ---------------- */
 class Particle {
   constructor(text) {
     this.text = text;
-
     this.x = Math.random() * canvas.width;
     this.y = Math.random() * canvas.height;
-
     this.vx = (Math.random() - 0.5) * 1.2;
     this.vy = (Math.random() - 0.5) * 1.2;
-
-    this.size = Math.random() * 2 + 1;
-
+    this.size = Math.random() * 1 + 1;
+    this.font = `${this.size * 10}px Arial`;
     this.color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
   }
 
   update(time) {
-
-    /* floating motion */
     this.x += this.vx + Math.sin(time + this.y * 0.01) * 0.3;
     this.y += this.vy + Math.cos(time + this.x * 0.01) * 0.3;
 
-    /* wrap screen */
     if (this.x < 0) this.x = canvas.width;
     if (this.x > canvas.width) this.x = 0;
     if (this.y < 0) this.y = canvas.height;
     if (this.y > canvas.height) this.y = 0;
 
-    /* mouse gravity */
     let dx = this.x - mouse.x;
     let dy = this.y - mouse.y;
     let dist = Math.sqrt(dx*dx + dy*dy);
@@ -110,68 +101,214 @@ class Particle {
 
   draw() {
     ctx.fillStyle = this.color;
-    ctx.font = `${this.size * 12}px Arial`;
+    ctx.font = this.font;
     ctx.fillText(this.text, this.x, this.y);
   }
 }
 
-/* ---------------- CREATE FIELD ---------------- */
+/* ---------------- CONSTELLATION ---------------- */
+class LibraConstellation {
+  constructor() {
+    this.updateCenter();
+
+    this.points = [
+      {x:-120,y:40},{x:-80,y:10},{x:-40,y:-10},{x:0,y:-60},
+      {x:120,y:-20},{x:100,y:80},{x:20,y:160},{x:20,y:210}
+    ];
+
+    this.connections = [
+      [0,1],[1,2],[2,3],[3,4],
+      [4,5],[5,6],[6,7],[3,5]
+    ];
+
+    this.labels = this.points.map(() =>
+      data[Math.floor(Math.random() * data.length)]
+    );
+  }
+
+  updateCenter() {
+    this.centerX = canvas.width * 0.5;
+    this.centerY = canvas.height * 0.5;
+  }
+
+  draw() {
+    ctx.save();
+
+    const offsetX = (mouse.x - canvas.width/2) * 0.03;
+    const offsetY = (mouse.y - canvas.height/2) * 0.03;
+
+    ctx.translate(this.centerX + offsetX, this.centerY + offsetY);
+
+    this.connections.forEach(([a, b]) => {
+      let p1 = this.points[a];
+      let p2 = this.points[b];
+
+      let grad = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y);
+      grad.addColorStop(0, "rgba(180,220,255,0.2)");
+      grad.addColorStop(0.5, "rgba(180,220,255,0.8)");
+      grad.addColorStop(1, "rgba(180,220,255,0.2)");
+
+      ctx.strokeStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.stroke();
+    });
+
+    this.points.forEach((p, i) => {
+      let pulse = 6 + Math.sin(Date.now()*0.004+i)*2;
+
+      let glow = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,25);
+      glow.addColorStop(0,"rgba(255,255,255,0.9)");
+      glow.addColorStop(1,"transparent");
+
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,pulse,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.fillStyle="#fff";
+      ctx.font="12px Arial";
+      ctx.fillText(this.labels[i],p.x,p.y);
+    });
+
+    ctx.restore();
+  }
+}
+
+/* ---------------- MOON ---------------- */
+class Moon {
+  constructor() {
+    this.x = canvas.width * 0.8;
+    this.y = canvas.height * 0.2;
+    this.radius = 50;
+  }
+
+  draw() {
+    let offsetX = (mouse.x - canvas.width/2) * 0.01;
+    let offsetY = (mouse.y - canvas.height/2) * 0.01;
+
+    let x = this.x + offsetX;
+    let y = this.y + offsetY;
+
+    let glow = ctx.createRadialGradient(x,y,0,x,y,120);
+    glow.addColorStop(0,"rgba(255,255,255,0.9)");
+    glow.addColorStop(0.4,"rgba(200,220,255,0.4)");
+    glow.addColorStop(1,"transparent");
+
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x,y,this.radius,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+
+/* ---------------- SHOOTING STARS ---------------- */
+class ShootingStar {
+  constructor() {
+    this.reset();
+  }
+
+  reset() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height * 0.5;
+    this.len = Math.random() * 150 + 100;
+    this.speed = Math.random() * 10 + 6;
+    this.life = 0;
+    this.maxLife = 60;
+  }
+
+  update() {
+    this.x += this.speed;
+    this.y += this.speed * 0.4;
+    this.life++;
+  }
+
+  draw() {
+    let opacity = 1 - this.life / this.maxLife;
+
+    ctx.strokeStyle = `rgba(255,255,255,${opacity})`;
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(this.x, this.y);
+    ctx.lineTo(this.x - this.len, this.y - this.len * 0.4);
+    ctx.stroke();
+  }
+
+  isDead() {
+    return this.life > this.maxLife;
+  }
+}
+
+/* ---------------- INIT ---------------- */
 let particles = [];
+let constellation;
+let moon;
+let shootingStars = [];
 
 function init() {
   particles = [];
 
-  for (let i = 0; i < data.length * 12; i++) {
-    particles.push(
-      new Particle(data[Math.floor(Math.random() * data.length)])
-    );
+  for (let i = 0; i < data.length * 5; i++) {
+    particles.push(new Particle(data[Math.floor(Math.random() * data.length)]));
   }
+
+  constellation = new LibraConstellation();
+  moon = new Moon();
 }
 
+/* spawn shooting star every ~30s */
+setInterval(() => {
+  shootingStars.push(new ShootingStar());
+}, 30000);
+
+/* ---------------- ANIMATE ---------------- */
 let time = 0;
 
-/* ---------------- ANIMATION ---------------- */
 function animate() {
-
-  ctx.fillStyle = "rgba(0,0,0,0.15)";
+  ctx.fillStyle = "rgba(0,0,0,0.2)";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   time += 0.01;
 
-  /* cosmic glow */
   let glow = ctx.createRadialGradient(
-    canvas.width/2,
-    canvas.height/2,
-    0,
-    canvas.width/2,
-    canvas.height/2,
-    700
+    canvas.width/2,canvas.height/2,0,
+    canvas.width/2,canvas.height/2,700
   );
 
-  glow.addColorStop(0, "rgba(0,255,255,0.05)");
-  glow.addColorStop(1, "transparent");
+  glow.addColorStop(0,"rgba(0,255,255,0.05)");
+  glow.addColorStop(1,"transparent");
 
   ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0,0,canvas.width,canvas.height);
 
   particles.forEach(p => {
     p.update(time);
     p.draw();
   });
 
+  moon.draw();
+  constellation.draw();
+
+  shootingStars.forEach((s,i)=>{
+    s.update();
+    s.draw();
+    if(s.isDead()) shootingStars.splice(i,1);
+  });
+
   requestAnimationFrame(animate);
 }
+
+/* ---------------- RESIZE ---------------- */
+window.addEventListener("resize", () => {
+  setCanvasSize();
+  init();
+});
 
 /* ---------------- START ---------------- */
 init();
 animate();
-
-/* ---------------- RESIZE ---------------- */
-window.addEventListener("resize", () => {
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
-  init();
-});
 </script>
 
 </body>
